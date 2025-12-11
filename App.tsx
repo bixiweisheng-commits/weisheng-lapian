@@ -110,12 +110,13 @@ const App: React.FC = () => {
     analyzeShotFrame(apiKey, base64Image.split(',')[1], shotNum)
       .then(analysisData => {
         setShots(current => current.map(s => 
-          s.id === newId ? { ...s, isAnalyzing: false, analysis: analysisData } : s
+          s.id === newId ? { ...s, isAnalyzing: false, analysis: analysisData, error: undefined } : s
         ));
       })
       .catch(err => {
+        const errorMessage = err instanceof Error ? err.message : "Unknown error";
         setShots(current => current.map(s => 
-          s.id === newId ? { ...s, isAnalyzing: false } : s
+          s.id === newId ? { ...s, isAnalyzing: false, error: errorMessage } : s
         ));
         console.error("Analysis Error", err);
       });
@@ -229,6 +230,47 @@ const App: React.FC = () => {
   const captureAndAnalyze = async () => {
       if (!videoRef.current) return;
       await processFrame(videoRef.current, videoRef.current.currentTime, shots.length + 1);
+  };
+
+  const handleRetryAnalysis = async (id: string) => {
+    const shot = shots.find(s => s.id === id);
+    if (!shot || !apiKey) {
+        if (!apiKey) setShowKeyModal(true);
+        return;
+    }
+
+    // Set to analyzing
+    setShots(prev => prev.map(s => s.id === id ? { ...s, isAnalyzing: true, error: undefined } : s));
+
+    try {
+        // We use the shot index in the array as a proxy for shot number if analysis is missing
+        const index = shots.findIndex(s => s.id === id);
+        const shotNum = shot.analysis?.shotNumber || (index + 1);
+        
+        const analysisData = await analyzeShotFrame(apiKey, shot.imageUrl.split(',')[1], shotNum);
+        
+        setShots(prev => prev.map(s => 
+            s.id === id ? { ...s, isAnalyzing: false, analysis: analysisData, error: undefined } : s
+        ));
+    } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Retry failed";
+        setShots(prev => prev.map(s => 
+            s.id === id ? { ...s, isAnalyzing: false, error: errorMessage } : s
+        ));
+    }
+  };
+
+  const handleDownloadImage = (id: string) => {
+    const shot = shots.find(s => s.id === id);
+    if (!shot) return;
+
+    const link = document.createElement('a');
+    link.href = shot.imageUrl;
+    const shotNum = shot.analysis?.shotNumber || 'shot';
+    link.download = `HuanXiAI_Shot_${shotNum}_${new Date().getTime()}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleGenerateImage = async (prompt: string, resolution: ImageResolution) => {
@@ -444,6 +486,8 @@ const App: React.FC = () => {
                     onDelete={handleDeleteShot} 
                     onGenerateImage={handleGenerateImage}
                     onEditImage={handleEditImage}
+                    onRetry={handleRetryAnalysis}
+                    onDownloadImage={handleDownloadImage}
                   />
                 ))
               )}

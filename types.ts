@@ -48,6 +48,7 @@ export interface Shot {
   imageUrl: string; // Base64
   analysis: ShotAnalysis | null;
   isAnalyzing: boolean;
+  error?: string; // Error message if analysis failed
 }
 
 export interface ChatMessage {

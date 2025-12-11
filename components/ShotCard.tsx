@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, Wand2, RefreshCw, PenTool, Image as ImageIcon, Film, Mic, Video, Users, Copy, Check } from 'lucide-react';
+import { Trash2, Wand2, RefreshCw, PenTool, Image as ImageIcon, Film, Mic, Video, Users, Copy, Check, AlertTriangle, Download } from 'lucide-react';
 import { Shot, ImageResolution } from '../types';
 
 interface Props {
@@ -7,9 +7,11 @@ interface Props {
   onDelete: (id: string) => void;
   onGenerateImage: (prompt: string, resolution: ImageResolution) => void;
   onEditImage: (id: string, imageBase64: string) => void;
+  onRetry: (id: string) => void;
+  onDownloadImage: (id: string) => void;
 }
 
-const ShotCard: React.FC<Props> = ({ shot, onDelete, onGenerateImage, onEditImage }) => {
+const ShotCard: React.FC<Props> = ({ shot, onDelete, onGenerateImage, onEditImage, onRetry, onDownloadImage }) => {
   const [resolution, setResolution] = useState<ImageResolution>(ImageResolution.RES_1K);
   const [copied, setCopied] = useState(false);
 
@@ -38,10 +40,17 @@ const ShotCard: React.FC<Props> = ({ shot, onDelete, onGenerateImage, onEditImag
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
              <button 
               onClick={() => onEditImage(shot.id, shot.imageUrl)}
-              className="p-3 bg-blue-600 rounded-full hover:bg-blue-500 text-white shadow-lg"
+              className="p-3 bg-blue-600 rounded-full hover:bg-blue-500 text-white shadow-lg transition-transform hover:scale-105"
               title="AI 编辑图片"
             >
               <PenTool size={20} />
+            </button>
+             <button 
+              onClick={() => onDownloadImage(shot.id)}
+              className="p-3 bg-emerald-600 rounded-full hover:bg-emerald-500 text-white shadow-lg transition-transform hover:scale-105"
+              title="保存图片"
+            >
+              <Download size={20} />
             </button>
           </div>
         </div>
@@ -154,8 +163,18 @@ const ShotCard: React.FC<Props> = ({ shot, onDelete, onGenerateImage, onEditImag
               </div>
             </div>
           ) : (
-            <div className="text-red-400 text-center py-10">
-              分析失败
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+              <AlertTriangle className="w-10 h-10 text-red-500" />
+              <div className="text-red-400 font-medium">
+                分析失败
+                {shot.error && <span className="block text-xs text-red-500/70 mt-1 max-w-xs">{shot.error}</span>}
+              </div>
+              <button 
+                onClick={() => onRetry(shot.id)}
+                className="bg-gray-700 hover:bg-gray-600 text-white text-xs px-4 py-2 rounded-full flex items-center gap-2 transition"
+              >
+                <RefreshCw size={14} /> 重试
+              </button>
             </div>
           )}
         </div>

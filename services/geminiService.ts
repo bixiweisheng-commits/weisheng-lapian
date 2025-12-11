@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { GoogleGenAI, Type, Schema, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { ImageResolution } from "../types";
 
 // Helper to get client with dynamic key
@@ -83,12 +83,23 @@ export const analyzeShotFrame = async (apiKey: string, base64Image: string, shot
         responseMimeType: "application/json",
         responseSchema: analysisSchema,
         systemInstruction: "你是一个专业的电影拉片助手。请用中文回答所有分析内容，但Midjourney提示词保持英文。分析要专业、精准。",
+        safetySettings: [
+          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        ],
       }
     });
 
-    return response.text ? JSON.parse(response.text) : null;
-  } catch (error) {
+    if (!response.text) {
+        throw new Error("Empty response from AI");
+    }
+
+    return JSON.parse(response.text);
+  } catch (error: any) {
     console.error("Analysis failed:", error);
+    // Return a structured error object if possible or allow caller to handle
     throw error;
   }
 };
