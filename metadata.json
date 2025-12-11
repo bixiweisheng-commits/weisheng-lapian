@@ -1,0 +1,7 @@
+{
+  "name": "欢玺AI",
+  "description": "Professional video shot analysis and reverse engineering tool powered by Gemini.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
